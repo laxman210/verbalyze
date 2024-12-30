@@ -13,14 +13,22 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.658.0",
     "@aws-sdk/client-s3": "^3.658.0",
+    "@aws-sdk/client-sns": "^3.716.0",
     "@aws-sdk/credential-provider-env": "^3.654.0",
     "@aws-sdk/lib-dynamodb": "^3.658.0",
-    "aws-sdk": "^2.1691.0",
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.3",
+    "cheerio": "^1.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.21.0",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
     "googleapis": "^144.0.0",
-    "multer": "^1.4.5-lts.1"
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^2.7.0",
+    "uuid": "^11.0.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.7"
