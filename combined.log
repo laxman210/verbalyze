@@ -1,0 +1,34 @@
+{"level":"info","message":"Login attempt started","service":"user-service"}
+{"level":"info","message":"Login attempt for email: ajayep626@gmail.com","service":"user-service"}
+{"$metadata":{"attempts":1,"httpStatusCode":200,"requestId":"M5QQTF9U2MRLOM4REICD7HB4F3VV4KQNSO5AEMVJF66Q9ASUAAJG","totalRetryDelay":0},"Count":1,"Items":[{"createdAt":"2024-12-31T08:00:03.684Z","email":"ajayep626@gmail.com","firstName":"ajay","lastName":"KUMAR E P","password":"$2b$10$MR/9828A3wM.Ic0L4xKDvONABNH9w2RSCatTYuUFXTxM8EESa7twO","phone":"+918113977626","userId":"AJKU7626"}],"ScannedCount":1,"level":"info","message":"DynamoDB query result:","service":"user-service"}
+{"level":"warn","message":"Password does not match","service":"user-service"}
+{"level":"info","message":"Login attempt started","service":"user-service"}
+{"level":"info","message":"Login attempt for email: ajayep626@gmail.com","service":"user-service"}
+{"$metadata":{"attempts":1,"httpStatusCode":200,"requestId":"KGPD8OIMLAMULID6TS15P2LUTRVV4KQNSO5AEMVJF66Q9ASUAAJG","totalRetryDelay":0},"Count":1,"Items":[{"createdAt":"2024-12-31T08:00:03.684Z","email":"ajayep626@gmail.com","firstName":"ajay","lastName":"KUMAR E P","password":"$2b$10$MR/9828A3wM.Ic0L4xKDvONABNH9w2RSCatTYuUFXTxM8EESa7twO","phone":"+918113977626","userId":"AJKU7626"}],"ScannedCount":1,"level":"info","message":"DynamoDB query result:","service":"user-service"}
+{"level":"info","message":"JWT generated","service":"user-service"}
+{"level":"info","message":"Login successful","service":"user-service"}
+{"level":"info","message":"Login attempt started","service":"user-service","timestamp":"2024-12-31T10:15:00.789Z"}
+{"level":"info","message":"Login attempt for email: ajayep626@gmail.com","service":"user-service","timestamp":"2024-12-31T10:15:00.794Z"}
+{"$metadata":{"attempts":1,"httpStatusCode":200,"requestId":"0M2QVQ0LR0V4EBM06EB10830TJVV4KQNSO5AEMVJF66Q9ASUAAJG","totalRetryDelay":0},"Count":1,"Items":[{"createdAt":"2024-12-31T08:00:03.684Z","email":"ajayep626@gmail.com","firstName":"ajay","lastName":"KUMAR E P","password":"$2b$10$MR/9828A3wM.Ic0L4xKDvONABNH9w2RSCatTYuUFXTxM8EESa7twO","phone":"+918113977626","userId":"AJKU7626"}],"ScannedCount":1,"level":"info","message":"DynamoDB query result:","service":"user-service","timestamp":"2024-12-31T10:15:00.839Z"}
+{"level":"info","message":"JWT generated","service":"user-service","timestamp":"2024-12-31T10:15:00.921Z"}
+{"level":"info","message":"Login successful","service":"user-service","timestamp":"2024-12-31T10:15:00.923Z"}
+{"level":"info","message":"Message sent successfully:","response":{"$metadata":{"attempts":1,"httpStatusCode":200,"requestId":"04c5bb4c-3a91-5699-b039-e4a1f2bdccfa","totalRetryDelay":0},"MessageId":"e605e0a7-c6d0-534d-8f55-bf4a0efcd92e"},"service":"user-service","timestamp":"2024-12-31T10:22:38.080Z"}
+{"level":"info","message":"Login attempt started","service":"user-service","timestamp":"2024-12-31T10:23:52.603Z"}
+{"level":"info","message":"Login attempt for email: deepa@gmail.com","service":"user-service","timestamp":"2024-12-31T10:23:52.607Z"}
+{"$metadata":{"attempts":1,"httpStatusCode":200,"requestId":"EV8U02FS4S90D23BQUBABKC9GRVV4KQNSO5AEMVJF66Q9ASUAAJG","totalRetryDelay":0},"Count":1,"Items":[{"createdAt":"2024-12-31T10:23:16.874Z","email":"deepa@gmail.com","firstName":"deepa","lastName":"kumar","password":"$2b$10$QC8D0sooiDUsw53Zs2XQWOIjxC/U9L7D7rNNPa.gdPcbFfFnLc7SG","phone":"+918113977626","userId":"DEKU7626"}],"ScannedCount":1,"level":"info","message":"DynamoDB query result:","service":"user-service","timestamp":"2024-12-31T10:23:52.667Z"}
+{"level":"info","message":"JWT generated","service":"user-service","timestamp":"2024-12-31T10:23:52.817Z"}
+{"level":"info","message":"Login successful","service":"user-service","timestamp":"2024-12-31T10:23:52.819Z"}
+{"level":"info","message":"Login attempt started","service":"user-service","timestamp":"2024-12-31T12:14:22.536Z"}
+{"level":"info","message":"Login attempt for email: ajay@gmail.com","service":"user-service","timestamp":"2024-12-31T12:14:22.540Z"}
+{"$metadata":{"attempts":1,"httpStatusCode":200,"requestId":"C5C095QIKIBROC0DASO0A34TQJVV4KQNSO5AEMVJF66Q9ASUAAJG","totalRetryDelay":0},"Count":0,"Items":[],"ScannedCount":0,"level":"info","message":"DynamoDB query result:","service":"user-service","timestamp":"2024-12-31T12:14:22.823Z"}
+{"level":"warn","message":"No user found with the provided email","service":"user-service","timestamp":"2024-12-31T12:14:22.826Z"}
+{"level":"info","message":"Login attempt started","service":"user-service","timestamp":"2024-12-31T12:14:35.413Z"}
+{"level":"info","message":"Login attempt for email: ajay@gmail.com","service":"user-service","timestamp":"2024-12-31T12:14:35.414Z"}
+{"$metadata":{"attempts":1,"httpStatusCode":200,"requestId":"IGO6HULOGKQMCJT0E839M4EI8BVV4KQNSO5AEMVJF66Q9ASUAAJG","totalRetryDelay":0},"Count":0,"Items":[],"ScannedCount":0,"level":"info","message":"DynamoDB query result:","service":"user-service","timestamp":"2024-12-31T12:14:35.455Z"}
+{"level":"warn","message":"No user found with the provided email","service":"user-service","timestamp":"2024-12-31T12:14:35.456Z"}
+{"level":"info","message":"Login attempt started","service":"user-service","timestamp":"2024-12-31T12:15:11.013Z"}
+{"level":"info","message":"Login attempt for email: deepa@gmail.com","service":"user-service","timestamp":"2024-12-31T12:15:11.014Z"}
+{"$metadata":{"attempts":1,"httpStatusCode":200,"requestId":"6JNL8UE6GAOCAV0GL9VUDG791NVV4KQNSO5AEMVJF66Q9ASUAAJG","totalRetryDelay":0},"Count":1,"Items":[{"createdAt":"2024-12-31T10:23:16.874Z","email":"deepa@gmail.com","firstName":"deepa","lastName":"kumar","password":"$2b$10$QC8D0sooiDUsw53Zs2XQWOIjxC/U9L7D7rNNPa.gdPcbFfFnLc7SG","phone":"+918113977626","userId":"DEKU7626"}],"ScannedCount":1,"level":"info","message":"DynamoDB query result:","service":"user-service","timestamp":"2024-12-31T12:15:11.065Z"}
+{"level":"info","message":"JWT generated","service":"user-service","timestamp":"2024-12-31T12:15:11.155Z"}
+{"level":"info","message":"Login successful","service":"user-service","timestamp":"2024-12-31T12:15:11.156Z"}
+{"level":"info","message":"Message sent successfully:","response":{"$metadata":{"attempts":1,"httpStatusCode":200,"requestId":"1c370e2e-1576-5ecf-9f48-51c3f7a7ebcd","totalRetryDelay":0},"MessageId":"a70594ec-a709-59fe-99d9-cb0145d8ccfc"},"service":"user-service","timestamp":"2024-12-31T12:16:19.046Z"}
