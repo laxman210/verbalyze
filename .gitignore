@@ -4,3 +4,30 @@ node_modules/
 # Environment Variables
 .env
 
+# Logs
+*.log
+combined.log
+error.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Build directories
+/build
+/dist
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# Test and utility scripts
+get-refresh-token.js
+test-dynamodb-connection.js
+test-login.js
+list-users.js
+update-password.js
+
+# OS-specific files
+.DS_Store
+Thumbs.db
