@@ -1,27 +1,16 @@
 // Import required modules
 const dynamoDB = require('../config/dynamoDB');
-const { uploadImageToS3 } = require('../config/s3');
-const docs = require('../config/googleAuth');
 const { PutCommand, GetCommand, UpdateCommand, ScanCommand, QueryCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
-const { DescribeTableCommand, DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { v4: uuidv4 } = require('uuid');
-const fetch = require('node-fetch').default;
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const { SNSClient, PublishCommand } = require('@aws-sdk/client-sns');
 const { body, validationResult } = require('express-validator');
 const rateLimit = require('express-rate-limit');
-const ms = require('ms');
+const bcrypt = require('bcrypt');
 const winston = require('winston');
-const csrf = require('csurf');
 require('dotenv').config();
 
 // Environment variables for security
 const USERS_TABLE = process.env.USERS_TABLE;
-const BLOGPOST_TABLE = process.env.BLOGPOST_TABLE;
 const TEMP_USERS_TABLE = process.env.TEMP_USERS_TABLE;
-const JWT_SECRET = process.env.JWT_SECRET;
-const TOKEN_EXPIRY = process.env.TOKEN_EXPIRY || '1h';
 const OTP_EXPIRY_TIME = 5 * 60; // 5 minutes in seconds
 
 // Setup Winston logger
@@ -48,7 +37,7 @@ if (process.env.NODE_ENV !== 'production') {
     }));
 }
 
-if (!USERS_TABLE || !BLOGPOST_TABLE || !TEMP_USERS_TABLE || !JWT_SECRET || !TOKEN_EXPIRY) {
+if (!USERS_TABLE || !TEMP_USERS_TABLE) {
     logger.error('Missing required environment variables');
     process.exit(1);
 }
@@ -63,12 +52,6 @@ const sns = new SNSClient({
 });
 
 // Rate limiting setup
-const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // limit each IP to 5 login attempts per windowMs
-    message: 'Too many login attempts, please try again later.'
-});
-
 const registerLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 3, // limit each IP to 3 registration attempts per windowMs
@@ -76,105 +59,12 @@ const registerLimiter = rateLimit({
 });
 
 // Input validation middleware
-const validateLoginInput = [
-    body('email').isEmail().normalizeEmail(),
-    body('password').isLength({ min: 6 })
-];
-
 const validateRegistrationInput = [
     body('firstName').trim().isLength({ min: 2 }),
     body('lastName').trim().isLength({ min: 2 }),
     body('email').isEmail().normalizeEmail(),
     body('phone').isMobilePhone()
 ];
-
-// Helper function for input validation
-const handleValidationErrors = (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
-    }
-    next();
-};
-
-// CSRF protection
-const csrfProtection = csrf({ cookie: true });
-
-const loginUser = async (req, res) => {
-    try {
-        logger.info('Login attempt started');
-        // Input validation
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            logger.warn('Validation errors:', errors.array());
-            return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
-        }
-
-        const { email, password } = req.body;
-        logger.info(`Login attempt for email: ${email}`);
-
-        const params = new QueryCommand({
-            TableName: USERS_TABLE,
-            IndexName: 'EmailIndex',
-            KeyConditionExpression: 'email = :email',
-            ExpressionAttributeValues: {
-                ':email': email
-            }
-        });
-
-        const result = await dynamoDB.send(params);
-        logger.info('DynamoDB query result:', result);
-
-        if (!result.Items || result.Items.length === 0) {
-            logger.warn('No user found with the provided email');
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
-
-        const user = result.Items[0];
-
-        if (!user.password) {
-            logger.warn('User has no password set');
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
-
-        // Compare password
-        const isMatch = await bcrypt.compare(password, user.password);
-
-        if (!isMatch) {
-            logger.warn('Password does not match');
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
-
-        // Generate JWT
-        const token = jwt.sign(
-            {
-                userId: user.userId,
-                email: user.email,
-            },
-            JWT_SECRET,
-            { expiresIn: TOKEN_EXPIRY }
-        );
-        logger.info('JWT generated');
-
-        // Set JWT in cookie
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: ms(TOKEN_EXPIRY), // Convert to milliseconds
-        });
-
-        logger.info('Login successful');
-        return res.status(200).json({ message: 'Login successful', userId: user.userId });
-
-    } catch (error) {
-        logger.error('Error during login:', error);
-        return res.status(500).json({ message: 'An error occurred during login. Please try again later.' });
-    }
-};
-
-// Apply rate limiting and input validation to login route
-loginUser.middlewares = [loginLimiter, validateLoginInput];
 // Helper functions
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -469,55 +359,12 @@ const saveCompanyDetails = async (req, res) => {
     }
 };
 
-const userDetails = async (req, res) => {
-    try {
-        let userId = req.query.userId || req.params.userId || (req.body && req.body.userId);
-
-        if (!userId) {
-            return res.status(400).json({ message: 'User ID is required.' });
-        }
-
-        logger.info(`Fetching user details for userId: ${userId}`);
-
-        // Find the user by userId
-        const getParams = new GetCommand({
-            TableName: USERS_TABLE,
-            Key: { userId: userId }
-        });
-
-        const result = await dynamoDB.send(getParams);
-
-        if (!result.Item) {
-            return res.status(404).json({ message: 'User not found.' });
-        }
-
-        const user = result.Item;
-
-        res.status(200).json({
-            userId: user.userId,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            phone: user.phone,
-            organisation: user.organisation,
-            industry: user.industry,
-            size: user.size,
-            website: user.website
-        });
-    } catch (error) {
-        logger.error('Error during fetching user details:', { error: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
-    }
-};
-
 
 module.exports = {
     // Authentication functions
-    loginUser,
     register,
     verifyOtp,
     
     // User management functions
     saveCompanyDetails,
-    userDetails
 };

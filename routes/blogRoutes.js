@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const blogController = require('../controllers/blogController');
-const userController = require('../controllers/userController');
-const { loginLimiter, registerLimiter } = require('../middleware/rateLimiter');
-const { validateLoginInput, validateRegistrationInput } = require('../middleware/inputValidation');
+const userReg = require('../controllers/userReg');
+const userLogin = require('../controllers/userlogin');
+const { registerLimiter } = require('../middleware/rateLimiter');
+const { validateRegistrationInput } = require('../middleware/inputValidation');
 const { QueryCommand } = require('@aws-sdk/lib-dynamodb');
 const dynamoDB = require('../config/dynamoDB');
 
@@ -12,11 +13,12 @@ const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
 
 // Authentication routes
-router.post('/login', loginLimiter, validateLoginInput, asyncHandler(userController.loginUser));
-router.post('/signup', registerLimiter, validateRegistrationInput, asyncHandler(userController.register));
-router.post('/signuptwo', asyncHandler(userController.verifyOtp));
-router.post('/signupthree', asyncHandler(userController.saveCompanyDetails));
-router.get('/signupfour', asyncHandler(userController.userDetails));
+router.post('/login', asyncHandler(userLogin.loginUser));
+router.post('/signup', registerLimiter, validateRegistrationInput, asyncHandler(userReg.register));
+router.post('/signuptwo', asyncHandler(userReg.verifyOtp));
+router.post('/signupthree', asyncHandler(userReg.saveCompanyDetails));
+
+// Remove the userDetails route as it's no longer present in userReg.js
 
 // Blog routes
 router.post('/blog', asyncHandler(blogController.createBlogPostFromGoogleDoc));
