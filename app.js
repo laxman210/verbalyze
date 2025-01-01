@@ -1,68 +1,77 @@
-try {
-  const helmet = require('helmet');
-  const express = require('express');
-  const cors = require('cors');
-  const app = express();
-  require('dotenv').config();
+const helmet = require('helmet');
+const express = require('express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
+const app = express();
+require('dotenv').config();
 
-  // Middleware for parsing JSON
-  app.use(express.json());
+const isProduction = process.env.NODE_ENV === 'production';
 
-  // Middleware for parsing URL-encoded data (for form submissions)
-  app.use(express.urlencoded({ extended: true }));
+// Middleware for parsing cookies
+app.use(cookieParser());
 
-  // CORS configuration
-  app.use(cors({
-    origin: 'http://localhost:3000', // Allow requests from React frontend
-    credentials: true, // Allow credentials (cookies, authorization headers, etc.)
-  }));
+// Middleware for parsing JSON
+app.use(express.json());
 
-  // Content Security Policy
-  app.use(helmet.contentSecurityPolicy({
-    directives: {
-      defaultSrc: ["'self'"],
-      connectSrc: ["'self'", "http://localhost:3000", "http://localhost:5000"], // Updated backend port
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // May need to adjust based on your React app's requirements
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      fontSrc: ["'self'", "data:", "blob:"],
-    }
-  }));
+// Middleware for parsing URL-encoded data (for form submissions)
+app.use(express.urlencoded({ extended: true }));
 
-  // Log all incoming requests with more details
-  app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    console.log('Headers:', req.headers);
-    console.log('Body:', req.body);
-    next();
-  });
+// CORS configuration
+app.use(cors({
+  origin: isProduction ? process.env.FRONTEND_URL : 'http://localhost:3000',
+  credentials: true,
+}));
 
-  // Routes
-  const blogRoutes = require('./routes/blogRoutes');
-  app.use('/api', blogRoutes);
+// Enhanced security with Helmet
+app.use(helmet());
 
-  // Test route for getBlogPost
-  app.get('/test-get-blog-post/:docId', async (req, res) => {
-    const { getBlogPost } = require('./controllers/blogController');
-    try {
-      await getBlogPost(req, res);
-    } catch (error) {
-      console.error('Error in getBlogPost:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  });
+// Content Security Policy
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"],
+    connectSrc: ["'self'", isProduction ? process.env.FRONTEND_URL : "http://localhost:3000"],
+    scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+    styleSrc: ["'self'", "'unsafe-inline'"],
+    imgSrc: ["'self'", "data:", "blob:"],
+    fontSrc: ["'self'", "data:", "blob:"],
+  }
+}));
 
-  // Error handling middleware
-  app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    res.status(500).json({ message: 'Something went wrong!', error: err.message });
-  });
-
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-
-} catch (error) {
-  console.error('Error in application setup:', error);
+// Logging
+if (isProduction) {
+  app.use(morgan('combined'));
+} else {
+  app.use(morgan('dev'));
 }
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
+
+// Routes
+const blogRoutes = require('./routes/blogRoutes');
+app.use('/api', blogRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ 
+    message: isProduction ? 'Something went wrong!' : err.message,
+    stack: isProduction ? '🥞' : err.stack
+  });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.log('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Application specific logging, throwing an error, or other logic here
+});

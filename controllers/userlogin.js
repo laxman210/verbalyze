@@ -13,7 +13,9 @@ require('dotenv').config();
 const USERS_TABLE = process.env.USERS_TABLE;
 const TEMP_USERS_TABLE = process.env.TEMP_USERS_TABLE;
 const JWT_SECRET = process.env.JWT_SECRET;
-const TOKEN_EXPIRY = process.env.TOKEN_EXPIRY || '1h';
+const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || '15m';
+const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY || '7d';
+const REMEMBER_ME_EXPIRY = process.env.REMEMBER_ME_EXPIRY || '30d';
 const OTP_EXPIRY_TIME = 5 * 60; // 5 minutes in seconds
 
 // Setup Winston logger
@@ -63,8 +65,8 @@ const loginUser = async (req, res) => {
             return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
         }
 
-        const { email, password } = req.body;
-        logger.info(`Login attempt for email: ${email}`);
+        const { email, password, rememberMe } = req.body;
+        logger.info(`Login attempt for email: ${email}, rememberMe: ${rememberMe}`);
 
         const params = new QueryCommand({
             TableName: USERS_TABLE,
@@ -98,23 +100,56 @@ const loginUser = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // Generate JWT
-        const token = jwt.sign(
+        // Generate access token
+        const accessToken = jwt.sign(
             {
                 userId: user.userId,
                 email: user.email,
             },
             JWT_SECRET,
-            { expiresIn: TOKEN_EXPIRY }
+            { expiresIn: ACCESS_TOKEN_EXPIRY }
         );
-        logger.info('JWT generated');
 
-        // Set JWT in cookie
-        res.cookie('token', token, {
+        // Generate refresh token
+        const refreshToken = jwt.sign(
+            {
+                userId: user.userId,
+                tokenVersion: user.tokenVersion || 0,
+            },
+            JWT_SECRET,
+            { expiresIn: rememberMe ? REMEMBER_ME_EXPIRY : REFRESH_TOKEN_EXPIRY }
+        );
+
+        // Update user's refresh token in the database
+        const updateParams = new UpdateCommand({
+            TableName: USERS_TABLE,
+            Key: { userId: user.userId },
+            UpdateExpression: 'SET refreshToken = :refreshToken, tokenVersion = if_not_exists(tokenVersion, :zero) + :one',
+            ExpressionAttributeValues: {
+                ':refreshToken': refreshToken,
+                ':zero': 0,
+                ':one': 1
+            },
+            ReturnValues: 'UPDATED_NEW'
+        });
+
+        await dynamoDB.send(updateParams);
+
+        logger.info('Tokens generated and stored');
+
+        // Set tokens in cookies
+        res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: ms(TOKEN_EXPIRY), // Convert to milliseconds
+            maxAge: ms(ACCESS_TOKEN_EXPIRY),
+        });
+
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: ms(rememberMe ? REMEMBER_ME_EXPIRY : REFRESH_TOKEN_EXPIRY),
         });
 
         logger.info('Login successful');
@@ -122,7 +157,12 @@ const loginUser = async (req, res) => {
 
     } catch (error) {
         logger.error('Error during login:', error);
-        return res.status(500).json({ message: 'An error occurred during login. Please try again later.' });
+        console.error('Detailed error:', error);
+        return res.status(500).json({ 
+            message: 'An error occurred during login. Please try again later.',
+            error: error.message,
+            stack: error.stack
+        });
     }
 };
 
@@ -326,8 +366,67 @@ forgotPassword.middlewares = [rateLimit({
     message: 'Too many forgot password attempts, please try again later.'
 })];
 
+const refreshToken = async (req, res) => {
+    const { refreshToken } = req.cookies;
+
+    if (!refreshToken) {
+        return res.status(401).json({ message: 'Refresh token not found' });
+    }
+
+    try {
+        const decoded = jwt.verify(refreshToken, JWT_SECRET);
+        const user = await dynamoDB.send(new GetCommand({
+            TableName: USERS_TABLE,
+            Key: { userId: decoded.userId }
+        }));
+
+        if (!user.Item || user.Item.refreshToken !== refreshToken || user.Item.tokenVersion !== decoded.tokenVersion) {
+            return res.status(401).json({ message: 'Invalid refresh token' });
+        }
+
+        const accessToken = jwt.sign(
+            { userId: user.Item.userId, email: user.Item.email },
+            JWT_SECRET,
+            { expiresIn: ACCESS_TOKEN_EXPIRY }
+        );
+
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: ms(ACCESS_TOKEN_EXPIRY),
+        });
+
+        return res.status(200).json({ message: 'Token refreshed successfully' });
+    } catch (error) {
+        logger.error('Error refreshing token:', error);
+        return res.status(401).json({ message: 'Invalid refresh token' });
+    }
+};
+
+const verifyToken = (req, res, next) => {
+    const { accessToken } = req.cookies;
+
+    if (!accessToken) {
+        return res.status(401).json({ message: 'Access token not found' });
+    }
+
+    try {
+        const decoded = jwt.verify(accessToken, JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return refreshToken(req, res);
+        }
+        return res.status(401).json({ message: 'Invalid access token' });
+    }
+};
+
 module.exports = {
     loginUser,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    refreshToken,
+    verifyToken
 };
