@@ -58,6 +58,12 @@ const registerLimiter = rateLimit({
     message: 'Too many registration attempts, please try again later.'
 });
 
+const resendOtpLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 3, // limit each IP to 3 resend attempts per windowMs
+    message: 'Too many OTP resend attempts, please try again later.'
+});
+
 // Input validation middleware
 const validateRegistrationInput = [
     body('firstName').trim().isLength({ min: 2 }),
@@ -271,6 +277,61 @@ const verifyOtp = async (req, res) => {
     }
 };
 
+const resendOtp = async (req, res) => {
+    try {
+        const { userId } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({ message: 'User ID is required.' });
+        }
+
+        // Retrieve temporary user data
+        const getTempUserParams = new GetCommand({
+            TableName: TEMP_USERS_TABLE,
+            Key: { userId: userId }
+        });
+
+        const tempUserResult = await dynamoDB.send(getTempUserParams);
+        const tempUser = tempUserResult.Item;
+
+        if (!tempUser) {
+            return res.status(404).json({ message: 'User not found. Please register again.' });
+        }
+
+        // Generate new OTP
+        const newOtp = generateOtp();
+        
+        try {
+            await sendSMS(tempUser.phone, newOtp);
+        } catch (smsError) {
+            logger.error('SMS Error:', { error: smsError });
+            return res.status(500).json({ message: 'Failed to send OTP. Please try again.' });
+        }
+
+        // Update temporary user data with new OTP and expiration time
+        const expirationTime = Math.floor(Date.now() / 1000) + OTP_EXPIRY_TIME;
+        const updateTempUserParams = new UpdateCommand({
+            TableName: TEMP_USERS_TABLE,
+            Key: { userId: userId },
+            UpdateExpression: 'SET otp = :otp, expirationTime = :expirationTime',
+            ExpressionAttributeValues: {
+                ':otp': newOtp,
+                ':expirationTime': expirationTime
+            }
+        });
+
+        await dynamoDB.send(updateTempUserParams);
+
+        res.status(200).json({ 
+            message: 'New OTP sent to your mobile number. It will expire in 5 minutes.',
+            userId
+        });
+    } catch (error) {
+        logger.error('Resend OTP Error:', { error: error.message, stack: error.stack });
+        res.status(500).json({ message: 'An error occurred while resending OTP. Please try again later.' });
+    }
+};
+
 const saveCompanyDetails = async (req, res) => {
     try {
         const { userId, organisation, industry, size, website } = req.body;
@@ -359,12 +420,15 @@ const saveCompanyDetails = async (req, res) => {
     }
 };
 
-
 module.exports = {
     // Authentication functions
     register,
     verifyOtp,
+    resendOtp,
     
     // User management functions
     saveCompanyDetails,
 };
+
+// Apply rate limiting to resendOtp
+resendOtp.middlewares = [resendOtpLimiter];

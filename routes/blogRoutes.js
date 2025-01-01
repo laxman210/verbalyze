@@ -15,8 +15,11 @@ const asyncHandler = (fn) => (req, res, next) =>
 // Authentication routes
 router.post('/login', asyncHandler(userLogin.loginUser));
 router.post('/signup', registerLimiter, validateRegistrationInput, asyncHandler(userReg.register));
+router.post('/resend-otp', asyncHandler(userReg.resendOtp));
 router.post('/signuptwo', asyncHandler(userReg.verifyOtp));
 router.post('/signupthree', asyncHandler(userReg.saveCompanyDetails));
+router.post('/forgot-password', asyncHandler(userLogin.forgotPassword));
+router.post('/reset-password', asyncHandler(userLogin.resetPassword));
 
 // Remove the userDetails route as it's no longer present in userReg.js
 
