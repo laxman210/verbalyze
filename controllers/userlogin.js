@@ -153,7 +153,20 @@ const loginUser = async (req, res) => {
         });
 
         logger.info('Login successful');
-        return res.status(200).json({ message: 'Login successful', userId: user.userId });
+        const response = {
+            message: 'Login successful',
+            userId: user.userId,
+            firstName: user.firstName || null,
+            lastName: user.lastName || null,
+            email: user.email,
+            phone: user.phone || null,
+            organisation: user.organisation || null,
+            industry: user.industry || null,
+            size: user.size || null,
+            website: user.website || null,
+            accessToken: accessToken // Include the access token in the response
+        };
+        return res.status(200).json(response);
 
     } catch (error) {
         logger.error('Error during login:', error);
