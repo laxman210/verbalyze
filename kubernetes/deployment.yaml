@@ -13,7 +13,7 @@ spec:
         app: nodejs-app
     spec:
       containers:
-      - name: verbalyze-container
+      - name: verbalyze
         image: verbalyze:latest
         ports:
         - containerPort: 3000
