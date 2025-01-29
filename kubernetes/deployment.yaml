@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: verbalyze
-        image: verbalyze:latest
+        image: laxman210/verbalyze:latest
         ports:
         - containerPort: 3000
